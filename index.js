@@ -116,6 +116,14 @@ function sendAggregates() {
     if (options.debug) {
       console.log("totalPVEnergy:", totalPVEnergy, " Aggregated Grid: ", gridBalance, " BatteryPower: ", totalBatteryPower, " Load: ", load, " totalActivePower:", totalActivePower, " totalPVPower:", totalPVPower, " totalEVSEPower:", totalEVSEPower);
     }
+    var state = {};
+    state.totalPVPower = totalPVPower;
+    state.totalEVSEPower = totalEVSEPower;
+    state.totalActivePower = totalActivePower;
+    state.totalPVEnergy = totalPVEnergy;
+    state.totalBatteryPower = totalBatteryPower;
+    state.load = load;
+    sendMqtt("agg/" + options.mqttclientid, state);
   }
 }
 
