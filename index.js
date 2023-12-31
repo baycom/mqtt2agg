@@ -185,8 +185,19 @@ MQTTclient.on('message', function (topic, message, packet) {
     let id = topic.split('/')[1];
     let obj = JSON.parse(message);
     //    console.log(id + util.inspect(obj));
-    PVPower[id] = findVal(obj, 'PV1Power') + findVal(obj, 'PV2Power') + findVal(obj, 'PV3Power') + findVal(obj, 'PV4Power') +
-      findVal(obj, 'PowerDC1') + findVal(obj, 'PowerDC2');
+    var val = findVal(obj, 'PV1Power');
+    PVPower[id] = isNaN(val)?0:val;
+    val = findVal(obj, 'PV2Power');
+    PVPower[id] += isNaN(val)?0:val;
+    val = findVal(obj, 'PV3Power');
+    PVPower[id] += isNaN(val)?0:val;
+    val = findVal(obj, 'PV4Power');
+    PVPower[id] += isNaN(val)?0:val;
+    val = findVal(obj, 'PowerDC1');
+    PVPower[id] += isNaN(val)?0:val;
+    val = findVal(obj, 'PowerDC2');
+    PVPower[id] += isNaN(val)?0:val;
+
     var val = findVal(obj, "TotalPVGeneration");
     if (val === undefined) {
       val = findVal(obj, 'ETotal');
