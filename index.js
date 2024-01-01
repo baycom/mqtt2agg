@@ -9,6 +9,7 @@ var EVSEPower = {};
 var activePower = {};
 var PVEnergy = {};
 var startup = Date.now();
+var nrg = {};
 
 const optionDefinitions = [
   { name: 'mqtthost', alias: 'm', type: String, defaultValue: "localhost" },
@@ -150,7 +151,6 @@ MQTTclient.on('message', function (topic, message, packet) {
     let func = sub[2];
     let obj = JSON.parse(message);
     if (func == 'nrg') {
-      let nrg = {};
       if (obj.length > 15) {
         nrg.UL1 = obj[0];
         nrg.UL2 = obj[1];
@@ -174,12 +174,11 @@ MQTTclient.on('message', function (topic, message, packet) {
         sendMqtt("go-eCharger/" + id + "/agg", nrg);
       }
     } else if (func == 'eto') {
-      let eto = {};
-      eto.eto = obj;
+      nrg.eto = obj;
       if (options.debug) {
-        console.log(util.inspect(eto));
+        console.log(util.inspect(nrg));
       }
-      sendMqtt("go-eCharger/" + id + "/agg", eto);
+      sendMqtt("go-eCharger/" + id + "/agg", nrg);
     }
   } else if (topic.includes("Huawei/") || topic.includes("GoodWe/") || topic.includes("Kostal")) {
     let id = topic.split('/')[1];
