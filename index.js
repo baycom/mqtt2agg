@@ -118,12 +118,12 @@ function sendAggregates() {
       console.log("totalPVEnergy:", totalPVEnergy, " Aggregated Grid: ", gridBalance, " BatteryPower: ", totalBatteryPower, " Load: ", load, " totalActivePower:", totalActivePower, " totalPVPower:", totalPVPower, " totalEVSEPower:", totalEVSEPower);
     }
     var state = {};
-    state.totalPVPower = totalPVPower.toFixed(3);
-    state.totalEVSEPower = totalEVSEPower.toFixed(3);
-    state.totalActivePower = totalActivePower.toFixed(3);
-    state.totalPVEnergy = totalPVEnergy.toFixed(3);
-    state.totalBatteryPower = totalBatteryPower.toFixed(3);
-    state.load = load.toFixed(3);
+    state.totalPVPower = parseFloat(totalPVPower.toFixed(3));
+    state.totalEVSEPower = parseFloat(totalEVSEPower.toFixed(3));
+    state.totalActivePower = parseFloat(totalActivePower.toFixed(3));
+    state.totalPVEnergy = parseFloat(totalPVEnergy.toFixed(3));
+    state.totalBatteryPower = parseFloat(totalBatteryPower.toFixed(3));
+    state.load = parseFloat(load.toFixed(3));
     sendMqtt("agg/" + options.mqttclientid, state);
   }
 }
