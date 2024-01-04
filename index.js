@@ -159,11 +159,11 @@ MQTTclient.on('message', function (topic, message, packet) {
         nrg.IL1 = obj[4];
         nrg.IL2 = obj[5];
         nrg.IL3 = obj[6];
-        nrg.IN = obj[7];
-        nrg.PL1 = obj[8];
-        nrg.PL2 = obj[9];
-        nrg.PL3 = obj[10];
-        nrg.PN = obj[11];
+        nrg.PL1 = obj[7];
+        nrg.PL2 = obj[8];
+        nrg.PL3 = obj[9];
+        nrg.PN = obj[10];
+        nrg.P = obj[11];
         nrg.pfL1 = obj[12];
         nrg.pfL2 = obj[13];
         nrg.pfL3 = obj[14];
