@@ -44,7 +44,7 @@ function sendMqtt(topic, data) {
   if (options.debug) {
     console.log("publish: " + topic, JSON.stringify(data));
   }
-  MQTTclient.publish(topic, JSON.stringify(data))
+  MQTTclient.publish(topic, JSON.stringify(data), { retain: true })
 }
 
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
