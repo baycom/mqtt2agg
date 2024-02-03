@@ -124,6 +124,7 @@ function sendAggregates() {
     state.totalPVEnergy = parseFloat(totalPVEnergy.toFixed(3));
     state.totalBatteryPower = parseFloat(totalBatteryPower.toFixed(3));
     state.load = parseFloat(load.toFixed(3));
+    state.gridBalance = parseFloat(gridBalance.toFixed(3));
     sendMqtt("agg/" + options.mqttclientid, state);
   }
 }
@@ -180,7 +181,7 @@ MQTTclient.on('message', function (topic, message, packet) {
       }
       sendMqtt("go-eCharger/" + id + "/agg", nrg);
     }
-  } else if (topic.includes("Huawei/") || topic.includes("GoodWe/") || topic.includes("Kostal")) {
+  } else if (topic.includes("Huawei/") || topic.includes("GoodWe/") || topic.includes("Kostal/")) {
     let id = topic.split('/')[1];
     let obj = JSON.parse(message);
     //    console.log(id + util.inspect(obj));
@@ -240,8 +241,15 @@ MQTTclient.on('message', function (topic, message, packet) {
   } else if (topic.includes(options.gridmeter)) {
     let id = topic.split('/')[1];
     let obj = JSON.parse(message);
-    gridBalance = obj['0:1.4.0'] - obj['0:2.4.0'];
-    //    console.log("gridBalance: ", gridBalance);
+    val = findVal(obj, 'Power');
+    if (val === undefined && findVal(obj,'0:1.4.0') != undefined) {
+      gridBalance = obj['0:1.4.0'] - obj['0:2.4.0'];
+    } else {
+      gridBalance = val;
+    }
+    if(options.debug) {
+      console.log("gridBalance: ", gridBalance);
+    }
     sendAggregates();
   }
 });
