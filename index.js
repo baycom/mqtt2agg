@@ -14,12 +14,12 @@ var nrg = {};
 const optionDefinitions = [
   { name: 'mqtthost', alias: 'm', type: String, defaultValue: "localhost" },
   { name: 'mqttclientid', alias: 'M', type: String, defaultValue: "mqtt2agg" },
-  { name: 'inverter', alias: 'i', type: String, multiple: true, defaultValue: ['Huawei/TA2250001011', 'Huawei/TA2250000021', 'GoodWe/9010KETU219W0414', 'GoodWe/9010KETU219W0420'] },
+  { name: 'inverter', alias: 'i', type: String, multiple: true, defaultValue: ['Huawei/#', 'GoodWe/#'] },
   { name: 'gridmeter', alias: 'g', type: String, defaultValue: "SMAEM/372/3002852001" },
   { name: 'evse', alias: 'e', type: String, multiple: true, defaultValue: ['tele/tasmota_9E1484/SENSOR', 'SM-DRT/EVSE2'] },
   { name: 'wait', alias: 'w', type: Number, defaultValue: 15000 },
   { name: 'debug', alias: 'd', type: Boolean, defaultValue: false },
-  { name: 'goecharger', alias: 'E', type: String, multiple: true, defaultValue: ['215869'] }
+  { name: 'goecharger', alias: 'E', type: String, multiple: true, defaultValue: ['+'] }
 ];
 
 const options = commandLineArgs(optionDefinitions)
