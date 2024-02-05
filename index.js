@@ -215,10 +215,10 @@ MQTTclient.on('message', function (topic, message, packet) {
 
     val = findVal(obj, 'GridFeedingPowerL');
     if (val === undefined) {
-      val = findVal(obj, 'TotalInverterPower');
+      val = findVal(obj, 'ActivePower');
     }
     if (val === undefined) {
-      val = findVal(obj, 'ActivePower');
+      val = findVal(obj, 'TotalInverterPower');
     }
     activePower[id] = val;
 
