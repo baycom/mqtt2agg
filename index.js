@@ -14,7 +14,7 @@ var nrg = {};
 const optionDefinitions = [
   { name: 'mqtthost', alias: 'm', type: String, defaultValue: "localhost" },
   { name: 'mqttclientid', alias: 'M', type: String, defaultValue: "mqtt2agg" },
-  { name: 'inverter', alias: 'i', type: String, multiple: true, defaultValue: ['Huawei/#', 'GoodWe/#'] },
+  { name: 'inverter', alias: 'i', type: String, multiple: true, defaultValue: ['Huawei/#', 'GoodWe/#', 'Hoymiles/#'] },
   { name: 'gridmeter', alias: 'g', type: String, defaultValue: "SMAEM/372/3002852001" },
   { name: 'evse', alias: 'e', type: String, multiple: true, defaultValue: ['tele/tasmota_9E1484/SENSOR', 'SM-DRT/EVSE2'] },
   { name: 'wait', alias: 'w', type: Number, defaultValue: 15000 },
@@ -230,8 +230,25 @@ MQTTclient.on('message', function (topic, message, packet) {
     if (options.debug) {
       console.log("PV-Inverter: ", id, " PVEnergy: ", PVEnergy[id], " PVPower:", PVPower[id], " ActivePower:", activePower[id], " Battery Power: ", batteryPower[id]);
     }
-
     sendAggregates();
+  } else if (topic.includes("Hoymiles/")){
+    let id = "Hoymiles";
+    let found = false;
+
+    if(topic.includes("ac/yieldtotal")) {
+      var val = parseFloat(message);
+      PVEnergy[id] = parseFloat(val.toFixed(3));
+      found = true;
+    }
+    if(topic.includes("ac/power")) {
+      var val = parseFloat(message);
+      PVPower[id] = parseFloat(val.toFixed(3));
+      found = true;
+    }
+    if(found) {
+      console.log("Hoymiles: ", id, " yieldtotal: ", PVEnergy[id], " powerdc: ", PVPower[id]);
+      sendAggregates();
+    }
   } else if (options.evse.indexOf(topic) >= 0) {
     let id = topic.split('/')[1];
     let obj = JSON.parse(message);
