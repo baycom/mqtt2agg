@@ -228,7 +228,7 @@ MQTTclient.on('message', function (topic, message, packet) {
     if(!options.gridmeter) {
       val = findVal(obj, 'MTTotalActivePower');
       if(isFinite(val)) {
-        gridBalance = val;
+        gridBalance = -val;
         if(options.debug) {
           console.log("gridBalance: ", gridBalance);
         }
