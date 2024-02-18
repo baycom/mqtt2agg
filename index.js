@@ -10,12 +10,13 @@ var activePower = {};
 var PVEnergy = {};
 var startup = Date.now();
 var nrg = {};
+var totalLoadPower = 0;
 
 const optionDefinitions = [
   { name: 'mqtthost', alias: 'm', type: String, defaultValue: "localhost" },
   { name: 'mqttclientid', alias: 'M', type: String, defaultValue: "mqtt2agg" },
   { name: 'inverter', alias: 'i', type: String, multiple: true, defaultValue: ['Huawei/#', 'GoodWe/#', 'Hoymiles/#'] },
-  { name: 'gridmeter', alias: 'g', type: String, defaultValue: "SMAEM/372/3002852001" },
+  { name: 'gridmeter', alias: 'g', type: String },
   { name: 'evse', alias: 'e', type: String, multiple: true, defaultValue: ['tele/tasmota_9E1484/SENSOR', 'SM-DRT/EVSE2'] },
   { name: 'wait', alias: 'w', type: Number, defaultValue: 15000 },
   { name: 'debug', alias: 'd', type: Boolean, defaultValue: false },
@@ -28,7 +29,7 @@ console.log("MQTT Host         : " + options.mqtthost);
 console.log("MQTT Client ID    : " + options.mqttclientid);
 console.log("Inverters         : " + options.inverter);
 console.log("Grid meter        : " + options.gridmeter);
-console.log("Go-eChargers      : " + options.goecharger);
+console.log("Go-eChargers      : go-eCharger/" + options.goecharger);
 
 var MQTTclient = mqtt.connect("mqtt://" + options.mqtthost, { clientId: options.mqttclientid });
 MQTTclient.on("connect", function () {
@@ -115,7 +116,7 @@ function sendAggregates() {
     }
     load = totalPVPower + gridBalance + totalBatteryPower;
     if (options.debug) {
-      console.log("totalPVEnergy:", totalPVEnergy, " Aggregated Grid: ", gridBalance, " BatteryPower: ", totalBatteryPower, " Load: ", load, " totalActivePower:", totalActivePower, " totalPVPower:", totalPVPower, " totalEVSEPower:", totalEVSEPower);
+      console.log("totalPVEnergy:", totalPVEnergy, " gridBalance: ", gridBalance, " BatteryPower: ", totalBatteryPower, " Load: ", load, " totalActivePower:", totalActivePower, " totalPVPower:", totalPVPower, " totalEVSEPower:", totalEVSEPower);
     }
     var state = {};
     state.totalPVPower = parseFloat(totalPVPower.toFixed(3));
@@ -184,7 +185,9 @@ MQTTclient.on('message', function (topic, message, packet) {
   } else if (topic.includes("Huawei/") || topic.includes("GoodWe/") || topic.includes("Kostal/")) {
     let id = topic.split('/')[1];
     let obj = JSON.parse(message);
-    //    console.log(id + util.inspect(obj));
+    if(options.debug) {
+      console.log(id + util.inspect(obj));
+    }
     var val = findVal(obj, 'PV1Power');
     PVPower[id] = isNaN(val)?0:val;
     val = findVal(obj, 'PV2Power');
@@ -213,15 +216,24 @@ MQTTclient.on('message', function (topic, message, packet) {
     }
     PVEnergy[id] = val;
 
-    val = findVal(obj, 'GridFeedingPowerL');
-    if (val === undefined) {
-      val = findVal(obj, 'ActivePower');
-    }
+    val = findVal(obj, 'ActivePower');
     if (val === undefined) {
       val = findVal(obj, 'TotalInverterPower');
     }
+    if (val === undefined) {
+      val = findVal(obj, 'GridFeedingPowerL');
+    }
     activePower[id] = val;
 
+    if(!options.gridmeter) {
+      val = findVal(obj, 'MTTotalActivePower');
+      if(isFinite(val)) {
+        gridBalance = val;
+        if(options.debug) {
+          console.log("gridBalance: ", gridBalance);
+        }
+      }
+    }
     val = findVal(obj, "BatteryPower");
     if (val === undefined) {
       val = 0;
