@@ -267,7 +267,7 @@ MQTTclient.on('message', function (topic, message, packet) {
     EVSEPower[id] = findVal(obj, 'TotalActivePower');
     //    console.log("EVSE: ",id, " TotalActivePower: ", EVSEPower[id]);
     sendAggregates();
-  } else if (topic.includes(options.gridmeter)) {
+  } else if (topic.includes("SMAEM/")) {
     let id = topic.split('/')[1];
     let obj = JSON.parse(message);
     val = findVal(obj, 'Power');
