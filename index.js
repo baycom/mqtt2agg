@@ -261,6 +261,17 @@ MQTTclient.on('message', function (topic, message, packet) {
       console.log("Hoymiles: ", id, " yieldtotal: ", PVEnergy[id], " powerdc: ", PVPower[id]);
       sendAggregates();
     }
+  } else if (options.inverter.some(r => topic.includes(r))) {
+    let id = topic.split('/')[1];
+    let obj = JSON.parse(message);
+    if(options.debug) {
+      console.log(id + util.inspect(obj));
+    }
+    var val = findVal(obj, 'Power');
+    PVPower[id] = isNaN(val)?0:val;
+    val = findVal(obj, 'Total');
+    PVEnergy[id] = isNaN(val)?0:val;
+    console.log("Solax: ", id, " yieldtotal: ", PVEnergy[id], " powerdc: ", PVPower[id]);
   } else if (options.evse.indexOf(topic) >= 0) {
     let id = topic.split('/')[1];
     let obj = JSON.parse(message);
