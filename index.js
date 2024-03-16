@@ -274,7 +274,7 @@ MQTTclient.on('message', function (topic, message, packet) {
       found = true;
     }
     if(topic.includes("ac/yieldday")) {
-      var val = parseFloat(message);
+      var val = parseFloat(message)/1000;
       todayPVEnergy[id] = parseFloat(val.toFixed(3));
       found = true;
     }
