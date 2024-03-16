@@ -8,6 +8,7 @@ var batteryPower = {};
 var EVSEPower = {};
 var activePower = {};
 var PVEnergy = {};
+var todayPVEnergy = {};
 var startup = Date.now();
 var nrg = {};
 var totalLoadPower = 0;
@@ -83,6 +84,7 @@ function sendAggregates() {
     let totalBatteryPower = 0;
     let load = 0;
     let totalPVEnergy = 0;
+    let dayPVEnergy = 0;
 
     for (const [key, value] of Object.entries(PVPower)) {
       totalPVPower += value;
@@ -108,6 +110,12 @@ function sendAggregates() {
     if (isNaN(totalPVEnergy)) {
       totalPVEnergy = 0;
     }
+    for (const [key, value] of Object.entries(todayPVEnergy)) {
+      dayPVEnergy += value;
+    }
+    if (isNaN(dayPVEnergy)) {
+      dayPVEnergy = 0;
+    }
     for (const [key, value] of Object.entries(batteryPower)) {
       totalBatteryPower += value;
     }
@@ -116,13 +124,14 @@ function sendAggregates() {
     }
     load = totalPVPower + gridBalance + totalBatteryPower;
     if (options.debug) {
-      console.log("totalPVEnergy:", totalPVEnergy, " gridBalance: ", gridBalance, " BatteryPower: ", totalBatteryPower, " Load: ", load, " totalActivePower:", totalActivePower, " totalPVPower:", totalPVPower, " totalEVSEPower:", totalEVSEPower);
+      console.log("totalPVEnergy:", totalPVEnergy, "dayPVEnergy:", dayPVEnergy, " gridBalance: ", gridBalance, " BatteryPower: ", totalBatteryPower, " Load: ", load, " totalActivePower:", totalActivePower, " totalPVPower:", totalPVPower, " totalEVSEPower:", totalEVSEPower);
     }
     var state = {};
     state.totalPVPower = parseFloat(totalPVPower.toFixed(3));
     state.totalEVSEPower = parseFloat(totalEVSEPower.toFixed(3));
     state.totalActivePower = parseFloat(totalActivePower.toFixed(3));
     state.totalPVEnergy = parseFloat(totalPVEnergy.toFixed(3));
+    state.dayPVEnergy = parseFloat(dayPVEnergy.toFixed(3));
     state.totalBatteryPower = parseFloat(totalBatteryPower.toFixed(3));
     state.load = parseFloat(load.toFixed(3));
     state.gridBalance = parseFloat(gridBalance.toFixed(3));
@@ -216,6 +225,18 @@ MQTTclient.on('message', function (topic, message, packet) {
     }
     PVEnergy[id] = val;
 
+    var val = findVal(obj, "TodayPVGeneration");
+    if (val === undefined) {
+      val = findVal(obj, 'EDay');
+    }
+    if (val === undefined) {
+      val = findVal(obj, 'DailyEnergyYield');
+    }
+    if (val === undefined) {
+      val = 0;
+    }
+    todayPVEnergy[id] = val;
+    
     val = findVal(obj, 'ActivePower');
     if (val === undefined) {
       val = findVal(obj, 'TotalInverterPower');
@@ -240,7 +261,7 @@ MQTTclient.on('message', function (topic, message, packet) {
     }
     batteryPower[id] = val;
     if (options.debug) {
-      console.log("PV-Inverter: ", id, " PVEnergy: ", PVEnergy[id], " PVPower:", PVPower[id], " ActivePower:", activePower[id], " Battery Power: ", batteryPower[id]);
+      console.log("PV-Inverter: ", id, " PVEnergy: ", PVEnergy[id], " TodayPVEnergy: ", todayPVEnergy[id], " PVPower:", PVPower[id], " ActivePower:", activePower[id], " Battery Power: ", batteryPower[id]);
     }
     sendAggregates();
   } else if (topic.includes("Hoymiles/")){
@@ -250,6 +271,11 @@ MQTTclient.on('message', function (topic, message, packet) {
     if(topic.includes("ac/yieldtotal")) {
       var val = parseFloat(message);
       PVEnergy[id] = parseFloat(val.toFixed(3));
+      found = true;
+    }
+    if(topic.includes("ac/yieldday")) {
+      var val = parseFloat(message);
+      todayPVEnergy[id] = parseFloat(val.toFixed(3));
       found = true;
     }
     if(topic.includes("ac/power")) {
@@ -271,7 +297,9 @@ MQTTclient.on('message', function (topic, message, packet) {
     PVPower[id] = isNaN(val)?0:val;
     val = findVal(obj, 'Total');
     PVEnergy[id] = isNaN(val)?0:val;
-    console.log("Solax: ", id, " yieldtotal: ", PVEnergy[id], " powerdc: ", PVPower[id]);
+    val = findVal(obj, 'Today');
+    todayPVEnergy[id] = isNaN(val)?0:val;
+    console.log("Solax: ", id, " yieldtotal: ", PVEnergy[id], " Today: ", todayPVEnergy[id],  " powerdc: ", PVPower[id]);
   } else if (options.evse.indexOf(topic) >= 0) {
     let id = topic.split('/')[1];
     let obj = JSON.parse(message);
