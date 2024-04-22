@@ -16,7 +16,7 @@ var totalLoadPower = 0;
 const optionDefinitions = [
   { name: 'mqtthost', alias: 'm', type: String, defaultValue: "localhost" },
   { name: 'mqttclientid', alias: 'M', type: String, defaultValue: "mqtt2agg" },
-  { name: 'inverter', alias: 'i', type: String, multiple: true, defaultValue: ['Huawei/#', 'GoodWe/#', 'Hoymiles/#'] },
+  { name: 'inverter', alias: 'i', type: String, multiple: true, defaultValue: ['Huawei/#', 'GoodWe/#', 'SMA/#', 'Hoymiles/#'] },
   { name: 'gridmeter', alias: 'g', type: String },
   { name: 'evse', alias: 'e', type: String, multiple: true, defaultValue: ['tele/tasmota_9E1484/SENSOR', 'SM-DRT/EVSE2'] },
   { name: 'wait', alias: 'w', type: Number, defaultValue: 15000 },
@@ -191,7 +191,7 @@ MQTTclient.on('message', function (topic, message, packet) {
       }
       sendMqtt("go-eCharger/" + id + "/agg", nrg);
     }
-  } else if (topic.includes("Huawei/") || topic.includes("GoodWe/") || topic.includes("Kostal/")) {
+  } else if (topic.includes("Huawei/") || topic.includes("GoodWe/") || topic.includes("Kostal/") || topic.includes("SMA/")) {
     let id = topic.split('/')[1];
     let obj = JSON.parse(message);
     if(options.debug) {
@@ -299,7 +299,9 @@ MQTTclient.on('message', function (topic, message, packet) {
     PVEnergy[id] = isNaN(val)?0:val;
     val = findVal(obj, 'Today');
     todayPVEnergy[id] = isNaN(val)?0:val;
-    console.log("Solax: ", id, " yieldtotal: ", PVEnergy[id], " Today: ", todayPVEnergy[id],  " powerdc: ", PVPower[id]);
+    if(options.debug) {
+      console.log("Solax: ", id, " yieldtotal: ", PVEnergy[id], " Today: ", todayPVEnergy[id],  " powerdc: ", PVPower[id]);
+    }
   } else if (options.evse.indexOf(topic) >= 0) {
     let id = topic.split('/')[1];
     let obj = JSON.parse(message);
