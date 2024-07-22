@@ -198,26 +198,28 @@ MQTTclient.on('message', function (topic, message, packet) {
       console.log(id + util.inspect(obj));
     }
     var val = 0;
+    PVPower[id] = 0;
+    
     val = findVal(obj, 'MPPT1Power');
     if(!isNaN(val)) {
-      PVPower[id] = isNaN(val)?0:val;
+      PVPower[id] += isNaN(val)?0:val;
     } else {
       val = findVal(obj, 'PV1Power');
-      PVPower[id] = isNaN(val)?0:val;
+      PVPower[id] += isNaN(val)?0:val;
     }
     val = findVal(obj, 'MPPT2Power');
     if(!isNaN(val)) {
-      PVPower[id] = isNaN(val)?0:val;
+      PVPower[id] += isNaN(val)?0:val;
     } else {
       val = findVal(obj, 'PV2Power');
-      PVPower[id] = isNaN(val)?0:val;
+      PVPower[id] += isNaN(val)?0:val;
     }
     val = findVal(obj, 'MPPT3Power');
     if(!isNaN(val)) {
-      PVPower[id] = isNaN(val)?0:val;
+      PVPower[id] += isNaN(val)?0:val;
     } else {
       val = findVal(obj, 'PV3Power');
-      PVPower[id] = isNaN(val)?0:val;
+      PVPower[id] += isNaN(val)?0:val;
       val = findVal(obj, 'PV4Power');
       PVPower[id] += isNaN(val)?0:val;
       val = findVal(obj, 'PV5Power');
