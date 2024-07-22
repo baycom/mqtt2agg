@@ -201,21 +201,21 @@ MQTTclient.on('message', function (topic, message, packet) {
     PVPower[id] = 0;
     
     val = findVal(obj, 'MPPT1Power');
-    if(!isNaN(val)) {
+    if(!isNaN(val) && val != 65535) {
       PVPower[id] += isNaN(val)?0:val;
     } else {
       val = findVal(obj, 'PV1Power');
       PVPower[id] += isNaN(val)?0:val;
     }
     val = findVal(obj, 'MPPT2Power');
-    if(!isNaN(val)) {
+    if(!isNaN(val) && val != 65535) {
       PVPower[id] += isNaN(val)?0:val;
     } else {
       val = findVal(obj, 'PV2Power');
       PVPower[id] += isNaN(val)?0:val;
     }
     val = findVal(obj, 'MPPT3Power');
-    if(!isNaN(val)) {
+    if(!isNaN(val) && val != 65535) {
       PVPower[id] += isNaN(val)?0:val;
     } else {
       val = findVal(obj, 'PV3Power');
@@ -283,7 +283,7 @@ MQTTclient.on('message', function (topic, message, packet) {
     }
     batteryPower[id] = val;
     if (options.debug) {
-      console.log("PV-Inverter: ", id, " PVEnergy: ", PVEnergy[id], " TodayPVEnergy: ", todayPVEnergy[id], " PVPower:", PVPower[id], " ActivePower:", activePower[id], " Battery Power: ", batteryPower[id]);
+      console.log("PV-Inverter: GoodWe/Kostal/SMA/Huawei", id, " PVEnergy: ", PVEnergy[id], " TodayPVEnergy: ", todayPVEnergy[id], " PVPower:", PVPower[id], " ActivePower:", activePower[id], " Battery Power: ", batteryPower[id]);
     }
     sendAggregates();
   } else if (topic.includes("Hoymiles/")){
@@ -306,7 +306,7 @@ MQTTclient.on('message', function (topic, message, packet) {
       found = true;
     }
     if(found) {
-      console.log("Hoymiles: ", id, " yieldtotal: ", PVEnergy[id], " powerdc: ", PVPower[id]);
+      console.log("PV-Inverter Hoymiles: ", id, " yieldtotal: ", PVEnergy[id], " powerdc: ", PVPower[id]);
       sendAggregates();
     }
   } else if (options.inverter.some(r => topic.includes(r))) {
@@ -322,7 +322,7 @@ MQTTclient.on('message', function (topic, message, packet) {
     val = findVal(obj, 'Today');
     todayPVEnergy[id] = isNaN(val)?0:val;
     if(options.debug) {
-      console.log("Solax: ", id, " yieldtotal: ", PVEnergy[id], " Today: ", todayPVEnergy[id],  " powerdc: ", PVPower[id]);
+      console.log("PV-Inverter Solax: ", id, " yieldtotal: ", PVEnergy[id], " Today: ", todayPVEnergy[id],  " powerdc: ", PVPower[id]);
     }
   } else if (options.evse.indexOf(topic) >= 0) {
     let id = topic.split('/')[1];
