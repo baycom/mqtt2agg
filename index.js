@@ -219,9 +219,9 @@ MQTTclient.on('message', function (topic, message, packet) {
       PVPower[id] += val;
     } else {
       val = findVal(obj, 'PV3Power');
-      PVPower[id] += val;
+      PVPower[id] += isNaN(val)?0:val;
       val = findVal(obj, 'PV4Power');
-      PVPower[id] += val;
+      PVPower[id] += isNaN(val)?0:val;
       val = findVal(obj, 'PV5Power');
       if(!isNaN(val) && val != 42948362) {
         PVPower[id] += val;
