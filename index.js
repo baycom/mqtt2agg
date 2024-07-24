@@ -201,21 +201,21 @@ MQTTclient.on('message', function (topic, message, packet) {
     PVPower[id] = 0;
     
     val = findVal(obj, 'MPPT1Power');
-    if(!isNaN(val) && val != 65535) {
+    if(!isNaN(val) && val != -1) {
       PVPower[id] += val;
     } else {
       val = findVal(obj, 'PV1Power');
       PVPower[id] += isNaN(val)?0:val;
     }
     val = findVal(obj, 'MPPT2Power');
-    if(!isNaN(val) && val != 65535) {
+    if(!isNaN(val) && val != -1) {
       PVPower[id] += val;
     } else {
       val = findVal(obj, 'PV2Power');
       PVPower[id] += isNaN(val)?0:val;
     }
     val = findVal(obj, 'MPPT3Power');
-    if(!isNaN(val) && val != 65535) {
+    if(!isNaN(val) && val != -1) {
       PVPower[id] += val;
     } else {
       val = findVal(obj, 'PV3Power');
@@ -223,13 +223,9 @@ MQTTclient.on('message', function (topic, message, packet) {
       val = findVal(obj, 'PV4Power');
       PVPower[id] += isNaN(val)?0:val;
       val = findVal(obj, 'PV5Power');
-      if(!isNaN(val) && val != 42948362) {
-        PVPower[id] += val;
-      }
+      PVPower[id] += isNaN(val)?0:val;
       val = findVal(obj, 'PV6Power');
-      if(!isNaN(val) && val != 42948362) {
-        PVPower[id] += val;
-      }
+      PVPower[id] += isNaN(val)?0:val;;
     }
     val = findVal(obj, 'PowerDC1');
     PVPower[id] += isNaN(val)?0:val;
