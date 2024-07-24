@@ -205,14 +205,14 @@ MQTTclient.on('message', function (topic, message, packet) {
       PVPower[id] += val;
     } else {
       val = findVal(obj, 'PV1Power');
-      PVPower[id] += val;
+      PVPower[id] += isNaN(val)?0:val;
     }
     val = findVal(obj, 'MPPT2Power');
     if(!isNaN(val) && val != 65535) {
       PVPower[id] += val;
     } else {
       val = findVal(obj, 'PV2Power');
-      PVPower[id] += val;
+      PVPower[id] += isNaN(val)?0:val;
     }
     val = findVal(obj, 'MPPT3Power');
     if(!isNaN(val) && val != 65535) {
