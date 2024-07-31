@@ -16,7 +16,7 @@ var totalLoadPower = 0;
 const optionDefinitions = [
   { name: 'mqtthost', alias: 'm', type: String, defaultValue: "localhost" },
   { name: 'mqttclientid', alias: 'M', type: String, defaultValue: "mqtt2agg" },
-  { name: 'inverter', alias: 'i', type: String, multiple: true, defaultValue: ['Huawei/#', 'GoodWe/#', 'SMA/#', 'Hoymiles/#'] },
+  { name: 'inverter', alias: 'i', type: String, multiple: true, defaultValue: ['Huawei/#', 'GoodWe/#', 'SMA/#', 'Hoymiles/#', 'Kostal/#'] },
   { name: 'gridmeter', alias: 'g', type: String },
   { name: 'evse', alias: 'e', type: String, multiple: true, defaultValue: ['tele/tasmota_9E1484/SENSOR', 'SM-DRT/EVSE2'] },
   { name: 'wait', alias: 'w', type: Number, defaultValue: 15000 },
