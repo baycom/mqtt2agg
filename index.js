@@ -18,6 +18,7 @@ const optionDefinitions = [
   { name: 'mqttclientid', alias: 'M', type: String, defaultValue: "mqtt2agg" },
   { name: 'inverter', alias: 'i', type: String, multiple: true, defaultValue: ['Huawei/#', 'GoodWe/#', 'SMA/#', 'Hoymiles/#', 'Kostal/#'] },
   { name: 'gridmeter', alias: 'g', type: String },
+  { name: 'gridmeterfield', alias: 'f', type: String, defaultValue: "Power"},
   { name: 'evse', alias: 'e', type: String, multiple: true, defaultValue: ['tele/tasmota_9E1484/SENSOR', 'SM-DRT/EVSE2'] },
   { name: 'wait', alias: 'w', type: Number, defaultValue: 15000 },
   { name: 'debug', alias: 'd', type: Boolean, defaultValue: false },
@@ -30,6 +31,7 @@ console.log("MQTT Host         : " + options.mqtthost);
 console.log("MQTT Client ID    : " + options.mqttclientid);
 console.log("Inverters         : " + options.inverter);
 console.log("Grid meter        : " + options.gridmeter);
+console.log("Grid meter field  : " + options.gridmeterfield);
 console.log("Go-eChargers      : go-eCharger/" + options.goecharger);
 
 var MQTTclient = mqtt.connect("mqtt://" + options.mqtthost, { clientId: options.mqttclientid });
@@ -333,15 +335,16 @@ MQTTclient.on('message', function (topic, message, packet) {
   } else if (topic.includes("SMAEM/") || topic.includes("tele/tasmota")) {
     let id = topic.split('/')[1];
     let obj = JSON.parse(message);
-    val = findVal(obj, 'Power');
+    val = findVal(obj, options.gridmeterfield);
     if (val === undefined && findVal(obj,'0:1.4.0') != undefined) {
-      gridBalance = obj['0:1.4.0'] - obj['0:2.4.0'];
-    } else {
-      gridBalance = val;
+      val = obj['0:1.4.0'] - obj['0:2.4.0'];
     }
-    if(options.debug) {
-      console.log("gridBalance: ", gridBalance);
+      if(val != undefined) {
+        gridBalance = val;
+        if(options.debug) {
+          console.log("gridBalance: ", gridBalance);
+        }
+        sendAggregates();
     }
-    sendAggregates();
   }
 });
