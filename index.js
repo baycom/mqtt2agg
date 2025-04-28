@@ -16,7 +16,8 @@ var totalLoadPower = 0;
 const optionDefinitions = [
   { name: 'mqtthost', alias: 'm', type: String, defaultValue: "localhost" },
   { name: 'mqttclientid', alias: 'M', type: String, defaultValue: "mqtt2agg" },
-  { name: 'inverter', alias: 'i', type: String, multiple: true, defaultValue: ['Huawei/#', 'GoodWe/#', 'SMA/#', 'Hoymiles/#', 'Kostal/#'] },
+  { name: 'inverter', alias: 'i', type: String, multiple: true, defaultValue: ['Huawei/#', 'GoodWe/#', 'SMA/#', 'Hoymiles/#', 'Kostal/#', 'SUNSPEC/#'] },
+
   { name: 'gridmeter', alias: 'g', type: String },
   { name: 'gridmeterfield', alias: 'f', type: String, defaultValue: "Power"},
   { name: 'evse', alias: 'e', type: String, multiple: true, defaultValue: ['tele/tasmota_9E1484/SENSOR', 'SM-DRT/EVSE2'] },
@@ -163,37 +164,39 @@ MQTTclient.on('message', function (topic, message, packet) {
     let id = sub[1];
     let func = sub[2];
     let obj = JSON.parse(message);
-    if (func == 'nrg') {
-      if (obj.length > 15) {
-        nrg.UL1 = obj[0];
-        nrg.UL2 = obj[1];
-        nrg.UL3 = obj[2];
-        nrg.UN = obj[3];
-        nrg.IL1 = obj[4];
-        nrg.IL2 = obj[5];
-        nrg.IL3 = obj[6];
-        nrg.PL1 = obj[7];
-        nrg.PL2 = obj[8];
-        nrg.PL3 = obj[9];
-        nrg.PN = obj[10];
-        nrg.P = obj[11];
-        nrg.pfL1 = obj[12];
-        nrg.pfL2 = obj[13];
-        nrg.pfL3 = obj[14];
-        nrg.pfN = obj[15];
+    if(obj) {
+      if (func == 'nrg') {
+        if (obj.length > 15) {
+          nrg.UL1 = obj[0];
+          nrg.UL2 = obj[1];
+          nrg.UL3 = obj[2];
+          nrg.UN = obj[3];
+          nrg.IL1 = obj[4];
+          nrg.IL2 = obj[5];
+          nrg.IL3 = obj[6];
+          nrg.PL1 = obj[7];
+          nrg.PL2 = obj[8];
+          nrg.PL3 = obj[9];
+          nrg.PN = obj[10];
+          nrg.P = obj[11];
+          nrg.pfL1 = obj[12];
+          nrg.pfL2 = obj[13];
+          nrg.pfL3 = obj[14];
+          nrg.pfN = obj[15];
+          if (options.debug) {
+            console.log(util.inspect(nrg));
+          }
+          sendMqtt("go-eCharger/" + id + "/agg", nrg);
+        }
+      } else if (func == 'eto') {
+        nrg.eto = obj;
         if (options.debug) {
           console.log(util.inspect(nrg));
         }
         sendMqtt("go-eCharger/" + id + "/agg", nrg);
       }
-    } else if (func == 'eto') {
-      nrg.eto = obj;
-      if (options.debug) {
-        console.log(util.inspect(nrg));
-      }
-      sendMqtt("go-eCharger/" + id + "/agg", nrg);
     }
-  } else if (topic.includes("Huawei/") || topic.includes("GoodWe/") || topic.includes("Kostal/") || topic.includes("SMA/")) {
+  } else if (topic.includes("Huawei/") || topic.includes("GoodWe/") || topic.includes("Kostal/") || topic.includes("SMA/") || topic.includes("SUNSPEC/")) {
     let id = topic.split('/')[1];
     let obj = JSON.parse(message);
     if(options.debug) {
