@@ -6,6 +6,7 @@ var gridBalance = 0;
 var PVPower = {};
 var batteryPower = {};
 var EVSEPower = {};
+var dimmablePower = {};
 var activePower = {};
 var PVEnergy = {};
 var todayPVEnergy = {};
@@ -21,6 +22,7 @@ const optionDefinitions = [
   { name: 'gridmeter', alias: 'g', type: String },
   { name: 'gridmeterfield', alias: 'f', type: String, defaultValue: "Power"},
   { name: 'evse', alias: 'e', type: String, multiple: true, defaultValue: ['tele/tasmota_9E1484/SENSOR', 'SM-DRT/EVSE2'] },
+  { name: 'dimmable', alias: 'D', type: String, multiple: true, defaultValue: ['SM-DRT/HS'] },
   { name: 'wait', alias: 'w', type: Number, defaultValue: 15000 },
   { name: 'debug', alias: 'd', type: Boolean, defaultValue: false },
   { name: 'goecharger', alias: 'E', type: String, multiple: true, defaultValue: ['+'] }
@@ -76,68 +78,66 @@ for (let address of options.evse) {
   MQTTclient.subscribe(address);
 }
 
+for (let address of options.dimmable) {
+  if (options.debug) {
+    console.log("subsribe: " + address);
+  }
+  MQTTclient.subscribe(address);
+}
+
 MQTTclient.subscribe(options.gridmeter);
+
+async function roundValues(object, fixed) {
+  for (const [key, value] of Object.entries(object)) {
+    if(isNaN(value)) {
+      object[key] = 0;
+    } else {
+      object[key] = parseFloat(value.toFixed(fixed));
+    }
+  }
+}
+
 
 function sendAggregates() {
   if ((Date.now() - startup) > options.wait) {
 
-    let totalPVPower = 0;
-    let totalEVSEPower = 0;
-    let totalActivePower = 0;
-    let totalBatteryPower = 0;
-    let load = 0;
-    let totalPVEnergy = 0;
-    let dayPVEnergy = 0;
+    var state = {};
+    state.totalPVPower = 0;
+    state.totalEVSEPower = 0;
+    state.totalDimmablePower = 0;
+    state.totalActivePower = 0;
+    state.totalBatteryPower = 0;
+    state.load = 0;
+    state.totalPVEnergy = 0;
+    state.dayPVEnergy = 0;
+    state.gridBalance = gridBalance;
 
     for (const [key, value] of Object.entries(PVPower)) {
-      totalPVPower += value;
-    }
-    if (isNaN(totalPVPower)) {
-      totalPVPower = 0;
+      state.totalPVPower += value;
     }
     for (const [key, value] of Object.entries(EVSEPower)) {
-      totalEVSEPower += value;
+      state.totalEVSEPower += value;
     }
-    if (isNaN(totalEVSEPower)) {
-      totalEVSEPower = 0;
+    for (const [key, value] of Object.entries(dimmablePower)) {
+      state.totalDimmablePower += value;
     }
     for (const [key, value] of Object.entries(activePower)) {
-      totalActivePower += value;
-    }
-    if (isNaN(totalActivePower)) {
-      totalActivePower = 0;
+      state.totalActivePower += value;
     }
     for (const [key, value] of Object.entries(PVEnergy)) {
-      totalPVEnergy += value;
-    }
-    if (isNaN(totalPVEnergy)) {
-      totalPVEnergy = 0;
+      state.totalPVEnergy += value;
     }
     for (const [key, value] of Object.entries(todayPVEnergy)) {
-      dayPVEnergy += value;
-    }
-    if (isNaN(dayPVEnergy)) {
-      dayPVEnergy = 0;
+      state.dayPVEnergy += value;
     }
     for (const [key, value] of Object.entries(batteryPower)) {
-      totalBatteryPower += value;
+      state.totalBatteryPower += value;
     }
-    if (isNaN(totalBatteryPower)) {
-      totalBatteryPower = 0;
-    }
-    load = totalPVPower + gridBalance + totalBatteryPower;
+    state.load = state.totalPVPower + state.gridBalance + state.totalBatteryPower;
+    roundValues(state, 3);
     if (options.debug) {
-      console.log("totalPVEnergy:", totalPVEnergy, "dayPVEnergy:", dayPVEnergy, " gridBalance: ", gridBalance, " BatteryPower: ", totalBatteryPower, " Load: ", load, " totalActivePower:", totalActivePower, " totalPVPower:", totalPVPower, " totalEVSEPower:", totalEVSEPower);
+      console.log("totalPVEnergy:", state.totalPVEnergy, "dayPVEnergy:", state.dayPVEnergy, " gridBalance: ", state.gridBalance, " BatteryPower: ", state.totalBatteryPower, " Load: ", state.load, " totalActivePower:", state.totalActivePower, " totalPVPower:", state.totalPVPower, " totalEVSEPower:", state.totalEVSEPower);
     }
-    var state = {};
-    state.totalPVPower = parseFloat(totalPVPower.toFixed(3));
-    state.totalEVSEPower = parseFloat(totalEVSEPower.toFixed(3));
-    state.totalActivePower = parseFloat(totalActivePower.toFixed(3));
-    state.totalPVEnergy = parseFloat(totalPVEnergy.toFixed(3));
-    state.dayPVEnergy = parseFloat(dayPVEnergy.toFixed(3));
-    state.totalBatteryPower = parseFloat(totalBatteryPower.toFixed(3));
-    state.load = parseFloat(load.toFixed(3));
-    state.gridBalance = parseFloat(gridBalance.toFixed(3));
     sendMqtt("agg/" + options.mqttclientid, state);
   }
 }
@@ -332,8 +332,13 @@ MQTTclient.on('message', function (topic, message, packet) {
   } else if (options.evse.indexOf(topic) >= 0) {
     let id = topic.split('/')[1];
     let obj = JSON.parse(message);
-    EVSEPower[id] = findVal(obj, 'TotalActivePower');
-    //    console.log("EVSE: ",id, " TotalActivePower: ", EVSEPower[id]);
+    let val = findVal(obj, 'TotalActivePower');
+    if(val) {
+      EVSEPower[id] = val*1000;
+      if(options.debug) {
+        console.log("EVSE: ",id, " TotalActivePower: ", EVSEPower[id]);
+      }
+    }
     sendAggregates();
   } else if (topic.includes("SMAEM/") || topic.includes("tele/tasmota")) {
     let id = topic.split('/')[1];
