@@ -21,8 +21,10 @@ const optionDefinitions = [
 
   { name: 'gridmeter', alias: 'g', type: String },
   { name: 'gridmeterfield', alias: 'f', type: String, defaultValue: "Power"},
-  { name: 'evse', alias: 'e', type: String, multiple: true, defaultValue: ['tele/tasmota_9E1484/SENSOR', 'SM-DRT/EVSE2'] },
+  { name: 'evse', alias: 'e', type: String, multiple: true , defaultValue: []},
+  { name: 'evsefield', type: String, multiple: true, defaultValue: ['TotalActivePower', 'TotalActivePower'] },
   { name: 'dimmable', alias: 'D', type: String, multiple: true, defaultValue: ['SM-DRT/HS'] },
+  { name: 'dimmablefield', alias: 'F', type: String, multiple: true, defaultValue: ['TotalActivePower'] },
   { name: 'wait', alias: 'w', type: Number, defaultValue: 15000 },
   { name: 'debug', alias: 'd', type: Boolean, defaultValue: false },
   { name: 'goecharger', alias: 'E', type: String, multiple: true, defaultValue: ['+'] }
@@ -164,6 +166,8 @@ MQTTclient.on('message', function (topic, message, packet) {
     let id = sub[1];
     let func = sub[2];
     let obj = JSON.parse(message);
+    let index = 0;
+     
     if(obj) {
       if (func == 'nrg') {
         if (obj.length > 15) {
@@ -185,6 +189,12 @@ MQTTclient.on('message', function (topic, message, packet) {
           nrg.pfN = obj[15];
           if (options.debug) {
             console.log(util.inspect(nrg));
+          }
+          if(options.evse.length == 0) {
+            if(options.debug) {
+              console.log("EVSEPower: " + id + " Power: " + nrg.P);
+            }
+            EVSEPower[id] = nrg.P;
           }
           sendMqtt("go-eCharger/" + id + "/agg", nrg);
         }
@@ -329,14 +339,25 @@ MQTTclient.on('message', function (topic, message, packet) {
     if(options.debug) {
       console.log("PV-Inverter Solax: ", id, " yieldtotal: ", PVEnergy[id], " Today: ", todayPVEnergy[id],  " powerdc: ", PVPower[id]);
     }
-  } else if (options.evse.indexOf(topic) >= 0) {
+  } else if ((index = options.evse.indexOf(topic)) >= 0) {
     let id = topic.split('/')[1];
     let obj = JSON.parse(message);
-    let val = findVal(obj, 'TotalActivePower');
+    let val = findVal(obj, options.evsefield[index]);
     if(val) {
       EVSEPower[id] = val*1000;
       if(options.debug) {
         console.log("EVSE: ",id, " TotalActivePower: ", EVSEPower[id]);
+      }
+    }
+    sendAggregates();
+  } else if ((index = options.dimmable.indexOf(topic)) >= 0) {
+    let id = topic.split('/')[1];
+    let obj = JSON.parse(message);
+    let val = findVal(obj, options.dimmablefield[index]);
+    if(val) {
+      dimmablePower[id] = val*1000;
+      if(options.debug) {
+        console.log("Dimmable: ",id, " TotalActivePower: ", dimmablePower[id]);
       }
     }
     sendAggregates();
