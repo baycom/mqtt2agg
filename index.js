@@ -343,7 +343,7 @@ MQTTclient.on('message', function (topic, message, packet) {
     let id = topic.split('/')[1];
     let obj = JSON.parse(message);
     let val = findVal(obj, options.evsefield[index]);
-    if(val) {
+    if(val != undefined) {
       EVSEPower[id] = val*1000;
       if(options.debug) {
         console.log("EVSE: ",id, " TotalActivePower: ", EVSEPower[id]);
@@ -354,7 +354,7 @@ MQTTclient.on('message', function (topic, message, packet) {
     let id = topic.split('/')[1];
     let obj = JSON.parse(message);
     let val = findVal(obj, options.dimmablefield[index]);
-    if(val) {
+    if(val != undefined) {
       dimmablePower[id] = val*1000;
       if(options.debug) {
         console.log("Dimmable: ",id, " TotalActivePower: ", dimmablePower[id]);
