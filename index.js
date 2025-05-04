@@ -166,7 +166,7 @@ MQTTclient.on('message', function (topic, message, packet) {
     let id = sub[1];
     let func = sub[2];
     let obj = JSON.parse(message);
-    let index = 0;
+    let index;
      
     if(obj) {
       if (func == 'nrg') {
