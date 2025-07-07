@@ -321,7 +321,9 @@ MQTTclient.on('message', function (topic, message, packet) {
       found = true;
     }
     if(found) {
-      console.log("PV-Inverter Hoymiles: ", id, " yieldtotal: ", PVEnergy[id], " powerdc: ", PVPower[id]);
+      if(options.debug) {
+        console.log("PV-Inverter Hoymiles: ", id, " yieldtotal: ", PVEnergy[id], " powerdc: ", PVPower[id]);
+      }
       sendAggregates();
     }
   } else if (options.inverter.some(r => topic.includes(r))) {
