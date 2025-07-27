@@ -12,6 +12,7 @@ var PVEnergy = {};
 var todayPVEnergy = {};
 var startup = Date.now();
 var nrg = {};
+var goEIds = [];
 var totalLoadPower = 0;
 
 const optionDefinitions = [
@@ -60,7 +61,7 @@ const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 for (let address of options.goecharger) {
   if (options.debug) {
-    console.log("subsribe: go-eCharger/" + address + "/...");
+    console.log("subscribe: go-eCharger/" + address + "/...");
   }
   MQTTclient.subscribe("go-eCharger/" + address + "/nrg");
   MQTTclient.subscribe("go-eCharger/" + address + "/eto");
@@ -68,21 +69,21 @@ for (let address of options.goecharger) {
 
 for (let address of options.inverter) {
   if (options.debug) {
-    console.log("subsribe: " + address);
+    console.log("subscribe: " + address);
   }
   MQTTclient.subscribe(address);
 }
 
 for (let address of options.evse) {
   if (options.debug) {
-    console.log("subsribe: " + address);
+    console.log("subscribe: " + address);
   }
   MQTTclient.subscribe(address);
 }
 
 for (let address of options.dimmable) {
   if (options.debug) {
-    console.log("subsribe: " + address);
+    console.log("subscribe: " + address);
   }
   MQTTclient.subscribe(address);
 }
@@ -141,6 +142,10 @@ function sendAggregates() {
       console.log("totalPVEnergy:", state.totalPVEnergy, "dayPVEnergy:", state.dayPVEnergy, " gridBalance: ", state.gridBalance, " BatteryPower: ", state.totalBatteryPower, " Load: ", state.load, " totalActivePower:", state.totalActivePower, " totalPVPower:", state.totalPVPower, " totalEVSEPower:", state.totalEVSEPower);
     }
     sendMqtt("agg/" + options.mqttclientid, state);
+    for (let id of goEIds) {
+      var goEgrid = { "pGrid":state.gridBalance, "pPv":state.totalPVPower, "pAkku":state.totalBatteryPower};
+      sendMqtt("go-eCharger/"+id+"/ids/set", goEgrid);
+    }
   }
 }
 
@@ -167,7 +172,9 @@ MQTTclient.on('message', function (topic, message, packet) {
     let func = sub[2];
     let obj = JSON.parse(message);
     let index;
-     
+    
+    goEIds.indexOf(id) === -1 ? goEIds.push(id):true;
+    
     if(obj) {
       if (func == 'nrg') {
         if (obj.length > 15) {
