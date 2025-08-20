@@ -1,5 +1,6 @@
 var util = require('util');
 var mqtt = require('mqtt');
+
 const commandLineArgs = require('command-line-args')
 var errorCounter = 0;
 var gridBalance = 0;
@@ -12,8 +13,9 @@ var PVEnergy = {};
 var todayPVEnergy = {};
 var startup = Date.now();
 var nrg = {};
-var goEIds = [];
 var totalLoadPower = 0;
+var gridBalanceAge = 0;
+var state = {};
 
 const optionDefinitions = [
   { name: 'mqtthost', alias: 'm', type: String, defaultValue: "localhost" },
@@ -40,7 +42,7 @@ console.log("Grid meter        : " + options.gridmeter);
 console.log("Grid meter field  : " + options.gridmeterfield);
 console.log("Go-eChargers      : go-eCharger/" + options.goecharger);
 
-var MQTTclient = mqtt.connect("mqtt://" + options.mqtthost, { clientId: options.mqttclientid });
+var MQTTclient = mqtt.connect("mqtt://" + options.mqtthost);
 MQTTclient.on("connect", function () {
   console.log("MQTT connected");
 })
@@ -104,7 +106,6 @@ async function roundValues(object, fixed) {
 function sendAggregates() {
   if ((Date.now() - startup) > options.wait) {
 
-    var state = {};
     state.totalPVPower = 0;
     state.totalEVSEPower = 0;
     state.totalDimmablePower = 0;
@@ -142,10 +143,6 @@ function sendAggregates() {
       console.log("totalPVEnergy:", state.totalPVEnergy, "dayPVEnergy:", state.dayPVEnergy, " gridBalance: ", state.gridBalance, " BatteryPower: ", state.totalBatteryPower, " Load: ", state.load, " totalActivePower:", state.totalActivePower, " totalPVPower:", state.totalPVPower, " totalEVSEPower:", state.totalEVSEPower);
     }
     sendMqtt("agg/" + options.mqttclientid, state);
-    for (let id of goEIds) {
-      var goEgrid = { "pGrid":state.gridBalance, "pPv":state.totalPVPower, "pAkku":state.totalBatteryPower};
-      sendMqtt("go-eCharger/"+id+"/ids/set", goEgrid);
-    }
   }
 }
 
@@ -172,8 +169,6 @@ MQTTclient.on('message', function (topic, message, packet) {
     let func = sub[2];
     let obj = JSON.parse(message);
     let index;
-    
-    goEIds.indexOf(id) === -1 ? goEIds.push(id):true;
     
     if(obj) {
       if (func == 'nrg') {
@@ -204,6 +199,13 @@ MQTTclient.on('message', function (topic, message, packet) {
             EVSEPower[id] = nrg.P;
           }
           sendMqtt("go-eCharger/" + id + "/agg", nrg);
+          if(findVal(state, "gridBalance") && (Date.now()-gridBalanceAge) < 10000) {
+            var goEgrid = { "pGrid":state.gridBalance, "pPv":state.totalPVPower, "pAkku":state.totalBatteryPower};
+            if(options.debug) {
+              console.log("go-eCharger: ids ", id, goEgrid);
+            }
+            sendMqtt("go-eCharger/"+id+"/ids/set", goEgrid);
+          }
         }
       } else if (func == 'eto') {
         nrg.eto = obj;
@@ -294,8 +296,9 @@ MQTTclient.on('message', function (topic, message, packet) {
       val = findVal(obj, 'MTTotalActivePower');
       if(isFinite(val)) {
         gridBalance = -val;
+        gridBalanceAge = Date.now();
         if(options.debug) {
-          console.log("gridBalance: ", gridBalance);
+          console.log(id, "gridBalance: ", gridBalance);
         }
       }
     }
@@ -377,12 +380,13 @@ MQTTclient.on('message', function (topic, message, packet) {
     if (val === undefined && findVal(obj,'0:1.4.0') != undefined) {
       val = obj['0:1.4.0'] - obj['0:2.4.0'];
     }
-      if(val != undefined) {
-        gridBalance = val;
-        if(options.debug) {
-          console.log("gridBalance: ", gridBalance);
-        }
-        sendAggregates();
+    if(val != undefined) {
+      gridBalance = val;
+      gridBalanceAge = Date.now();
+      if(options.debug) {
+        console.log("gridBalance: ", id, "val: ", gridBalance);
+      }
+      sendAggregates();
     }
   }
 });
