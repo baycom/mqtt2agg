@@ -306,6 +306,11 @@ MQTTclient.on('message', function (topic, message, packet) {
     if (val === undefined) {
       val = 0;
     }
+    var battery2Voltage = findVal(obj, "Battery2Voltage");
+    var battery2Current = findVal(obj, "Battery2Current");
+    if (battery2Voltage != undefined && battery2Current != undefined) {
+      val += battery2Voltage*battery2Current;
+    }
     batteryPower[id] = val;
     if (options.debug) {
       console.log("PV-Inverter: GoodWe/Kostal/SMA/Huawei", id, " PVEnergy: ", PVEnergy[id], " TodayPVEnergy: ", todayPVEnergy[id], " PVPower:", PVPower[id], " ActivePower:", activePower[id], " Battery Power: ", batteryPower[id]);
