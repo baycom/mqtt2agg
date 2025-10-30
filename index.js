@@ -306,10 +306,9 @@ MQTTclient.on('message', function (topic, message, packet) {
     if (val === undefined) {
       val = 0;
     }
-    var battery2Voltage = findVal(obj, "Battery2Voltage");
-    var battery2Current = findVal(obj, "Battery2Current");
-    if (battery2Voltage != undefined && battery2Current != undefined) {
-      val += battery2Voltage*battery2Current;
+    var battery2Power = findVal(obj, "Battery2Power");
+    if (battery2Power != undefined) {
+      val += battery2Power;
     }
     batteryPower[id] = val;
     if (options.debug) {
