@@ -16,6 +16,8 @@ var nrg = {};
 var totalLoadPower = 0;
 var gridBalanceAge = 0;
 var state = {};
+var state_retained = {};
+var hoymiles = [];
 
 const optionDefinitions = [
   { name: 'mqtthost', alias: 'm', type: String, defaultValue: "localhost" },
@@ -30,7 +32,8 @@ const optionDefinitions = [
   { name: 'dimmablefield', alias: 'F', type: String, multiple: true, defaultValue: ['TotalActivePower'] },
   { name: 'wait', alias: 'w', type: Number, defaultValue: 15000 },
   { name: 'debug', alias: 'd', type: Boolean, defaultValue: false },
-  { name: 'goecharger', alias: 'E', type: String, multiple: true, defaultValue: ['+'] }
+  { name: 'goecharger', alias: 'E', type: String, multiple: true, defaultValue: ['+'] },
+  { name: 'na', alias: 'n', type: String, defaultValue: ['NA/0/state'] }
 ];
 
 const options = commandLineArgs(optionDefinitions)
@@ -41,6 +44,7 @@ console.log("Inverters         : " + options.inverter);
 console.log("Grid meter        : " + options.gridmeter);
 console.log("Grid meter field  : " + options.gridmeterfield);
 console.log("Go-eChargers      : go-eCharger/" + options.goecharger);
+console.log("NA                : " + options.na);
 
 var MQTTclient = mqtt.connect("mqtt://" + options.mqtthost);
 MQTTclient.on("connect", function () {
@@ -52,6 +56,12 @@ MQTTclient.on("error", function (error) {
   process.exit(1)
 });
 
+function addUnique(array, item) {
+  if(array.indexOf(item) === -1) {
+    array.push(item);
+  }
+}
+
 function sendMqtt(topic, data) {
   if (options.debug) {
     console.log("publish: " + topic, JSON.stringify(data));
@@ -60,6 +70,8 @@ function sendMqtt(topic, data) {
 }
 
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+MQTTclient.subscribe("agg/" + options.mqttclientid);
 
 for (let address of options.goecharger) {
   if (options.debug) {
@@ -74,6 +86,10 @@ for (let address of options.inverter) {
     console.log("subscribe: " + address);
   }
   MQTTclient.subscribe(address);
+}
+
+if(options.na) {
+  MQTTclient.subscribe(options.na);
 }
 
 for (let address of options.evse) {
@@ -101,7 +117,6 @@ async function roundValues(object, fixed) {
     }
   }
 }
-
 
 function sendAggregates() {
   if ((Date.now() - startup) > options.wait) {
@@ -139,6 +154,12 @@ function sendAggregates() {
     }
     state.load = state.totalPVPower + state.gridBalance + state.totalBatteryPower;
     roundValues(state, 3);
+    if(state.totalPVEnergy < state_retained.totalPVEnergy) {
+      state.totalPVEnergy = state_retained.totalPVEnergy;
+    }
+    if(state.todayPVEnergy < state_retained.todayPVEnergy) {
+      state.todayPVEnergy = state_retained.todayPVEnergy;
+    }
     if (options.debug) {
       console.log("totalPVEnergy:", state.totalPVEnergy, "dayPVEnergy:", state.dayPVEnergy, " gridBalance: ", state.gridBalance, " BatteryPower: ", state.totalBatteryPower, " Load: ", state.load, " totalActivePower:", state.totalActivePower, " totalPVPower:", state.totalPVPower, " totalEVSEPower:", state.totalEVSEPower);
     }
@@ -316,9 +337,12 @@ MQTTclient.on('message', function (topic, message, packet) {
     }
     sendAggregates();
   } else if (topic.includes("Hoymiles/")){
-    let id = "Hoymiles";
     let found = false;
-
+    let id = topic.split('/')[1];
+    if(id != 'ac' && id != 'dc' && id != 'dtu') {
+      addUnique(hoymiles, id);
+    }
+    
     if(topic.includes("ac/yieldtotal")) {
       var val = parseFloat(message);
       PVEnergy[id] = parseFloat(val.toFixed(3));
@@ -391,6 +415,21 @@ MQTTclient.on('message', function (topic, message, packet) {
         console.log("gridBalance: ", id, "val: ", gridBalance);
       }
       sendAggregates();
+    } 
+  } else if ((index = options.na.indexOf(topic)) >= 0) {
+      let val = JSON.parse(message);
+      if(options.debug) {
+        console.log("NA: ",options.na, " state: ", val);
+      }
+      hoymiles.forEach(function (id, index) {
+        MQTTclient.publish("Hoymiles/" + id + "/cmd/power", val==0?"1":"0", { retain: true })
+    });
+  } else if (topic.includes("agg/" + options.mqttclientid)) {
+      if(packet.retain) {
+      state_retained = JSON.parse(message);
+      if(options.debug) {
+        console.log("agg received: ", state);
+      }
     }
   }
 });
