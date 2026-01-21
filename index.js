@@ -425,11 +425,9 @@ MQTTclient.on('message', function (topic, message, packet) {
         MQTTclient.publish("Hoymiles/" + id + "/cmd/power", val==0?"1":"0", { retain: true })
     });
   } else if (topic.includes("agg/" + options.mqttclientid)) {
-      if(packet.retain) {
       state_retained = JSON.parse(message);
       if(options.debug) {
         console.log("agg received: ", state);
       }
-    }
   }
 });
