@@ -154,16 +154,24 @@ function sendAggregates() {
     }
     state.load = state.totalPVPower + state.gridBalance + state.totalBatteryPower;
     roundValues(state, 3);
-    if(state.totalPVEnergy < state_retained.totalPVEnergy) {
-      state.totalPVEnergy = state_retained.totalPVEnergy;
-    }
-    if(state.todayPVEnergy < state_retained.todayPVEnergy) {
-      state.todayPVEnergy = state_retained.todayPVEnergy;
+    if(state_retained.totalPVEnergy < 400000000) { 
+      if(state.totalPVEnergy < state_retained.totalPVEnergy) {
+        state.totalPVEnergy = state_retained.totalPVEnergy;
+      }
+      if(state.todayPVEnergy < state_retained.todayPVEnergy) {
+        state.todayPVEnergy = state_retained.todayPVEnergy;
+      }
     }
     if (options.debug) {
       console.log("totalPVEnergy:", state.totalPVEnergy, "dayPVEnergy:", state.dayPVEnergy, " gridBalance: ", state.gridBalance, " BatteryPower: ", state.totalBatteryPower, " Load: ", state.load, " totalActivePower:", state.totalActivePower, " totalPVPower:", state.totalPVPower, " totalEVSEPower:", state.totalEVSEPower);
     }
-    sendMqtt("agg/" + options.mqttclientid, state);
+    if(state.totalPVEnergy < 400000000) {
+      sendMqtt("agg/" + options.mqttclientid, state);
+    } else {
+      if (options.debug) {
+        console.log("invalid totalPVEnergy, not sending aggregate");
+      }
+    }
   }
 }
 
