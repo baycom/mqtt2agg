@@ -25,8 +25,8 @@ const optionDefinitions = [
   { name: 'inverter', alias: 'i', type: String, multiple: true, defaultValue: ['Huawei/#', 'GoodWe/#', 'SMA/#', 'Hoymiles/#', 'Kostal/#', 'SUNSPEC/#'] },
 
   { name: 'gridmeter', alias: 'g', type: String },
-  { name: 'gridmeterfield', alias: 'f', type: String, defaultValue: "Power"},
-  { name: 'evse', alias: 'e', type: String, multiple: true , defaultValue: []},
+  { name: 'gridmeterfield', alias: 'f', type: String, defaultValue: "Power" },
+  { name: 'evse', alias: 'e', type: String, multiple: true, defaultValue: [] },
   { name: 'evsefield', type: String, multiple: true, defaultValue: ['TotalActivePower', 'TotalActivePower'] },
   { name: 'dimmable', alias: 'D', type: String, multiple: true, defaultValue: ['SM-DRT/HS'] },
   { name: 'dimmablefield', alias: 'F', type: String, multiple: true, defaultValue: ['TotalActivePower'] },
@@ -57,7 +57,7 @@ MQTTclient.on("error", function (error) {
 });
 
 function addUnique(array, item) {
-  if(array.indexOf(item) === -1) {
+  if (array.indexOf(item) === -1) {
     array.push(item);
   }
 }
@@ -88,7 +88,7 @@ for (let address of options.inverter) {
   MQTTclient.subscribe(address);
 }
 
-if(options.na) {
+if (options.na) {
   MQTTclient.subscribe(options.na);
 }
 
@@ -110,7 +110,7 @@ MQTTclient.subscribe(options.gridmeter);
 
 async function roundValues(object, fixed) {
   for (const [key, value] of Object.entries(object)) {
-    if(isNaN(value)) {
+    if (isNaN(value)) {
       object[key] = 0;
     } else {
       object[key] = parseFloat(value.toFixed(fixed));
@@ -154,18 +154,18 @@ function sendAggregates() {
     }
     state.load = state.totalPVPower + state.gridBalance + state.totalBatteryPower;
     roundValues(state, 3);
-    if(state_retained.totalPVEnergy < 400000000) { 
-      if(state.totalPVEnergy < state_retained.totalPVEnergy) {
+    //    if(state.todayPVEnergy < state_retained.todayPVEnergy) {
+    //        state.todayPVEnergy = state_retained.todayPVEnergy;
+    //    }
+    if (state_retained.totalPVEnergy < 400000000) {
+      if (state.totalPVEnergy < state_retained.totalPVEnergy) {
         state.totalPVEnergy = state_retained.totalPVEnergy;
-      }
-      if(state.todayPVEnergy < state_retained.todayPVEnergy) {
-        state.todayPVEnergy = state_retained.todayPVEnergy;
       }
     }
     if (options.debug) {
       console.log("totalPVEnergy:", state.totalPVEnergy, "dayPVEnergy:", state.dayPVEnergy, " gridBalance: ", state.gridBalance, " BatteryPower: ", state.totalBatteryPower, " Load: ", state.load, " totalActivePower:", state.totalActivePower, " totalPVPower:", state.totalPVPower, " totalEVSEPower:", state.totalEVSEPower);
     }
-    if(state.totalPVEnergy < 400000000) {
+    if (state.totalPVEnergy < 400000000) {
       sendMqtt("agg/" + options.mqttclientid, state);
     } else {
       if (options.debug) {
@@ -191,251 +191,256 @@ function findVal(object, key) {
 }
 
 MQTTclient.on('message', function (topic, message, packet) {
-  //  console.log(topic + message);
-  if (topic.includes("go-eCharger/")) {
-    let sub = topic.split('/');
-    let id = sub[1];
-    let func = sub[2];
-    let obj = JSON.parse(message);
-    let index;
-    
-    if(obj) {
-      if (func == 'nrg') {
-        if (obj.length > 15) {
-          nrg.UL1 = obj[0];
-          nrg.UL2 = obj[1];
-          nrg.UL3 = obj[2];
-          nrg.UN = obj[3];
-          nrg.IL1 = obj[4];
-          nrg.IL2 = obj[5];
-          nrg.IL3 = obj[6];
-          nrg.PL1 = obj[7];
-          nrg.PL2 = obj[8];
-          nrg.PL3 = obj[9];
-          nrg.PN = obj[10];
-          nrg.P = obj[11];
-          nrg.pfL1 = obj[12];
-          nrg.pfL2 = obj[13];
-          nrg.pfL3 = obj[14];
-          nrg.pfN = obj[15];
+  try {
+    //  console.log(topic + message);
+    if (topic.includes("go-eCharger/")) {
+      let sub = topic.split('/');
+      let id = sub[1];
+      let func = sub[2];
+      let obj = JSON.parse(message);
+      let index;
+
+      if (obj) {
+        if (func == 'nrg') {
+          if (obj.length > 15) {
+            nrg.UL1 = obj[0];
+            nrg.UL2 = obj[1];
+            nrg.UL3 = obj[2];
+            nrg.UN = obj[3];
+            nrg.IL1 = obj[4];
+            nrg.IL2 = obj[5];
+            nrg.IL3 = obj[6];
+            nrg.PL1 = obj[7];
+            nrg.PL2 = obj[8];
+            nrg.PL3 = obj[9];
+            nrg.PN = obj[10];
+            nrg.P = obj[11];
+            nrg.pfL1 = obj[12];
+            nrg.pfL2 = obj[13];
+            nrg.pfL3 = obj[14];
+            nrg.pfN = obj[15];
+            if (options.debug) {
+              console.log(util.inspect(nrg));
+            }
+            if (options.evse.length == 0) {
+              if (options.debug) {
+                console.log("EVSEPower: " + id + " Power: " + nrg.P);
+              }
+              EVSEPower[id] = nrg.P;
+            }
+            sendMqtt("go-eCharger/" + id + "/agg", nrg);
+            if (findVal(state, "gridBalance") && (Date.now() - gridBalanceAge) < 10000) {
+              var goEgrid = { "pGrid": state.gridBalance, "pPv": state.totalPVPower, "pAkku": state.totalBatteryPower };
+              if (options.debug) {
+                console.log("go-eCharger: ids ", id, goEgrid);
+              }
+              sendMqtt("go-eCharger/" + id + "/ids/set", goEgrid);
+            }
+          }
+        } else if (func == 'eto') {
+          nrg.eto = obj;
           if (options.debug) {
             console.log(util.inspect(nrg));
           }
-          if(options.evse.length == 0) {
-            if(options.debug) {
-              console.log("EVSEPower: " + id + " Power: " + nrg.P);
-            }
-            EVSEPower[id] = nrg.P;
-          }
           sendMqtt("go-eCharger/" + id + "/agg", nrg);
-          if(findVal(state, "gridBalance") && (Date.now()-gridBalanceAge) < 10000) {
-            var goEgrid = { "pGrid":state.gridBalance, "pPv":state.totalPVPower, "pAkku":state.totalBatteryPower};
-            if(options.debug) {
-              console.log("go-eCharger: ids ", id, goEgrid);
-            }
-            sendMqtt("go-eCharger/"+id+"/ids/set", goEgrid);
+        }
+      }
+    } else if (topic.includes("Huawei/") || topic.includes("GoodWe/") || topic.includes("Kostal/") || topic.includes("SMA/") || topic.includes("SUNSPEC/")) {
+      let id = topic.split('/')[1];
+      let obj = JSON.parse(message);
+      if (options.debug) {
+        console.log(id + util.inspect(obj));
+      }
+      var val = 0;
+      PVPower[id] = 0;
+
+      val = findVal(obj, 'MPPT1Power');
+      if (!isNaN(val) && val != -1) {
+        PVPower[id] += val;
+      } else {
+        val = findVal(obj, 'PV1Power');
+        PVPower[id] += isNaN(val) ? 0 : val;
+      }
+      val = findVal(obj, 'MPPT2Power');
+      if (!isNaN(val) && val != -1) {
+        PVPower[id] += val;
+      } else {
+        val = findVal(obj, 'PV2Power');
+        PVPower[id] += isNaN(val) ? 0 : val;
+      }
+      val = findVal(obj, 'MPPT3Power');
+      if (!isNaN(val) && val != -1) {
+        PVPower[id] += val;
+      } else {
+        val = findVal(obj, 'PV3Power');
+        PVPower[id] += isNaN(val) ? 0 : val;
+        val = findVal(obj, 'PV4Power');
+        PVPower[id] += isNaN(val) ? 0 : val;
+        val = findVal(obj, 'PV5Power');
+        PVPower[id] += isNaN(val) ? 0 : val;
+        val = findVal(obj, 'PV6Power');
+        PVPower[id] += isNaN(val) ? 0 : val;;
+      }
+      val = findVal(obj, 'PowerDC1');
+      PVPower[id] += isNaN(val) ? 0 : val;
+      val = findVal(obj, 'PowerDC2');
+      PVPower[id] += isNaN(val) ? 0 : val;
+
+      var val = findVal(obj, "TotalPVGeneration");
+      if (val === undefined) {
+        val = findVal(obj, 'ETotal');
+      }
+      if (val === undefined) {
+        val = findVal(obj, 'AccumulatedEnergyYield');
+      }
+      if (val === undefined) {
+        val = findVal(obj, 'TotalYield');
+      }
+      if (val === undefined) {
+        val = 0;
+      }
+      PVEnergy[id] = val;
+
+      var val = findVal(obj, "TodayPVGeneration");
+      if (val === undefined) {
+        val = findVal(obj, 'EDay');
+      }
+      if (val === undefined) {
+        val = findVal(obj, 'DailyEnergyYield');
+      }
+      if (val === undefined) {
+        val = 0;
+      }
+      todayPVEnergy[id] = val;
+
+      val = findVal(obj, 'ActivePower');
+      if (val === undefined) {
+        val = findVal(obj, 'TotalInverterPower');
+      }
+      if (val === undefined) {
+        val = findVal(obj, 'GridFeedingPowerL');
+      }
+      activePower[id] = val;
+
+      if (!options.gridmeter) {
+        val = findVal(obj, 'MTTotalActivePower');
+        if (isFinite(val)) {
+          gridBalance = -val;
+          gridBalanceAge = Date.now();
+          if (options.debug) {
+            console.log(id, "gridBalance: ", gridBalance);
           }
         }
-      } else if (func == 'eto') {
-        nrg.eto = obj;
+      }
+      val = findVal(obj, "BatteryPower");
+      if (val === undefined) {
+        val = 0;
+      }
+      var battery2Power = findVal(obj, "Battery2Power");
+      if (battery2Power != undefined) {
+        val += battery2Power;
+      }
+      batteryPower[id] = val;
+      if (options.debug) {
+        console.log("PV-Inverter: GoodWe/Kostal/SMA/Huawei", id, " PVEnergy: ", PVEnergy[id], " TodayPVEnergy: ", todayPVEnergy[id], " PVPower:", PVPower[id], " ActivePower:", activePower[id], " Battery Power: ", batteryPower[id]);
+      }
+      sendAggregates();
+    } else if (topic.includes("Hoymiles/")) {
+      let found = false;
+      let id = topic.split('/')[1];
+      if (id != 'ac' && id != 'dc' && id != 'dtu') {
+        addUnique(hoymiles, id);
+      }
+
+      if (topic.includes("ac/yieldtotal")) {
+        var val = parseFloat(message);
+        PVEnergy[id] = parseFloat(val.toFixed(3));
+        found = true;
+      }
+      if (topic.includes("ac/yieldday")) {
+        var val = parseFloat(message) / 1000;
+        todayPVEnergy[id] = parseFloat(val.toFixed(3));
+        found = true;
+      }
+      if (topic.includes("ac/power")) {
+        var val = parseFloat(message);
+        PVPower[id] = parseFloat(val.toFixed(3));
+        found = true;
+      }
+      if (found) {
         if (options.debug) {
-          console.log(util.inspect(nrg));
+          console.log("PV-Inverter Hoymiles: ", id, " yieldtotal: ", PVEnergy[id], " powerdc: ", PVPower[id]);
         }
-        sendMqtt("go-eCharger/" + id + "/agg", nrg);
+        sendAggregates();
       }
-    }
-  } else if (topic.includes("Huawei/") || topic.includes("GoodWe/") || topic.includes("Kostal/") || topic.includes("SMA/") || topic.includes("SUNSPEC/")) {
-    let id = topic.split('/')[1];
-    let obj = JSON.parse(message);
-    if(options.debug) {
-      console.log(id + util.inspect(obj));
-    }
-    var val = 0;
-    PVPower[id] = 0;
-    
-    val = findVal(obj, 'MPPT1Power');
-    if(!isNaN(val) && val != -1) {
-      PVPower[id] += val;
-    } else {
-      val = findVal(obj, 'PV1Power');
-      PVPower[id] += isNaN(val)?0:val;
-    }
-    val = findVal(obj, 'MPPT2Power');
-    if(!isNaN(val) && val != -1) {
-      PVPower[id] += val;
-    } else {
-      val = findVal(obj, 'PV2Power');
-      PVPower[id] += isNaN(val)?0:val;
-    }
-    val = findVal(obj, 'MPPT3Power');
-    if(!isNaN(val) && val != -1) {
-      PVPower[id] += val;
-    } else {
-      val = findVal(obj, 'PV3Power');
-      PVPower[id] += isNaN(val)?0:val;
-      val = findVal(obj, 'PV4Power');
-      PVPower[id] += isNaN(val)?0:val;
-      val = findVal(obj, 'PV5Power');
-      PVPower[id] += isNaN(val)?0:val;
-      val = findVal(obj, 'PV6Power');
-      PVPower[id] += isNaN(val)?0:val;;
-    }
-    val = findVal(obj, 'PowerDC1');
-    PVPower[id] += isNaN(val)?0:val;
-    val = findVal(obj, 'PowerDC2');
-    PVPower[id] += isNaN(val)?0:val;
-
-    var val = findVal(obj, "TotalPVGeneration");
-    if (val === undefined) {
-      val = findVal(obj, 'ETotal');
-    }
-    if (val === undefined) {
-      val = findVal(obj, 'AccumulatedEnergyYield');
-    }
-    if (val === undefined) {
-      val = findVal(obj, 'TotalYield');
-    }
-    if (val === undefined) {
-      val = 0;
-    }
-    PVEnergy[id] = val;
-
-    var val = findVal(obj, "TodayPVGeneration");
-    if (val === undefined) {
-      val = findVal(obj, 'EDay');
-    }
-    if (val === undefined) {
-      val = findVal(obj, 'DailyEnergyYield');
-    }
-    if (val === undefined) {
-      val = 0;
-    }
-    todayPVEnergy[id] = val;
-    
-    val = findVal(obj, 'ActivePower');
-    if (val === undefined) {
-      val = findVal(obj, 'TotalInverterPower');
-    }
-    if (val === undefined) {
-      val = findVal(obj, 'GridFeedingPowerL');
-    }
-    activePower[id] = val;
-
-    if(!options.gridmeter) {
-      val = findVal(obj, 'MTTotalActivePower');
-      if(isFinite(val)) {
-        gridBalance = -val;
+    } else if (options.inverter.some(r => topic.includes(r))) {
+      let id = topic.split('/')[1];
+      let obj = JSON.parse(message);
+      if (options.debug) {
+        console.log(id + util.inspect(obj));
+      }
+      var val = findVal(obj, 'Power');
+      PVPower[id] = isNaN(val) ? 0 : val;
+      val = findVal(obj, 'Total');
+      PVEnergy[id] = isNaN(val) ? 0 : val;
+      val = findVal(obj, 'Today');
+      todayPVEnergy[id] = isNaN(val) ? 0 : val;
+      if (options.debug) {
+        console.log("PV-Inverter Solax: ", id, " yieldtotal: ", PVEnergy[id], " Today: ", todayPVEnergy[id], " powerdc: ", PVPower[id]);
+      }
+    } else if ((index = options.evse.indexOf(topic)) >= 0) {
+      let id = topic.split('/')[1];
+      let obj = JSON.parse(message);
+      let val = findVal(obj, options.evsefield[index]);
+      if (val != undefined) {
+        EVSEPower[id] = val * 1000;
+        if (options.debug) {
+          console.log("EVSE: ", id, " TotalActivePower: ", EVSEPower[id]);
+        }
+      }
+      sendAggregates();
+    } else if ((index = options.dimmable.indexOf(topic)) >= 0) {
+      let id = topic.split('/')[1];
+      let obj = JSON.parse(message);
+      let val = findVal(obj, options.dimmablefield[index]);
+      if (val != undefined) {
+        dimmablePower[id] = val * 1000;
+        if (options.debug) {
+          console.log("Dimmable: ", id, " TotalActivePower: ", dimmablePower[id]);
+        }
+      }
+      sendAggregates();
+    } else if (topic.includes("SMAEM/") || topic.includes("tele/tasmota")) {
+      let id = topic.split('/')[1];
+      let obj = JSON.parse(message);
+      val = findVal(obj, options.gridmeterfield);
+      if (val === undefined && findVal(obj, '0:1.4.0') != undefined) {
+        val = obj['0:1.4.0'] - obj['0:2.4.0'];
+      }
+      if (val != undefined) {
+        gridBalance = val;
         gridBalanceAge = Date.now();
-        if(options.debug) {
-          console.log(id, "gridBalance: ", gridBalance);
+        if (options.debug) {
+          console.log("gridBalance: ", id, "val: ", gridBalance);
         }
+        sendAggregates();
       }
-    }
-    val = findVal(obj, "BatteryPower");
-    if (val === undefined) {
-      val = 0;
-    }
-    var battery2Power = findVal(obj, "Battery2Power");
-    if (battery2Power != undefined) {
-      val += battery2Power;
-    }
-    batteryPower[id] = val;
-    if (options.debug) {
-      console.log("PV-Inverter: GoodWe/Kostal/SMA/Huawei", id, " PVEnergy: ", PVEnergy[id], " TodayPVEnergy: ", todayPVEnergy[id], " PVPower:", PVPower[id], " ActivePower:", activePower[id], " Battery Power: ", batteryPower[id]);
-    }
-    sendAggregates();
-  } else if (topic.includes("Hoymiles/")){
-    let found = false;
-    let id = topic.split('/')[1];
-    if(id != 'ac' && id != 'dc' && id != 'dtu') {
-      addUnique(hoymiles, id);
-    }
-    
-    if(topic.includes("ac/yieldtotal")) {
-      var val = parseFloat(message);
-      PVEnergy[id] = parseFloat(val.toFixed(3));
-      found = true;
-    }
-    if(topic.includes("ac/yieldday")) {
-      var val = parseFloat(message)/1000;
-      todayPVEnergy[id] = parseFloat(val.toFixed(3));
-      found = true;
-    }
-    if(topic.includes("ac/power")) {
-      var val = parseFloat(message);
-      PVPower[id] = parseFloat(val.toFixed(3));
-      found = true;
-    }
-    if(found) {
-      if(options.debug) {
-        console.log("PV-Inverter Hoymiles: ", id, " yieldtotal: ", PVEnergy[id], " powerdc: ", PVPower[id]);
-      }
-      sendAggregates();
-    }
-  } else if (options.inverter.some(r => topic.includes(r))) {
-    let id = topic.split('/')[1];
-    let obj = JSON.parse(message);
-    if(options.debug) {
-      console.log(id + util.inspect(obj));
-    }
-    var val = findVal(obj, 'Power');
-    PVPower[id] = isNaN(val)?0:val;
-    val = findVal(obj, 'Total');
-    PVEnergy[id] = isNaN(val)?0:val;
-    val = findVal(obj, 'Today');
-    todayPVEnergy[id] = isNaN(val)?0:val;
-    if(options.debug) {
-      console.log("PV-Inverter Solax: ", id, " yieldtotal: ", PVEnergy[id], " Today: ", todayPVEnergy[id],  " powerdc: ", PVPower[id]);
-    }
-  } else if ((index = options.evse.indexOf(topic)) >= 0) {
-    let id = topic.split('/')[1];
-    let obj = JSON.parse(message);
-    let val = findVal(obj, options.evsefield[index]);
-    if(val != undefined) {
-      EVSEPower[id] = val*1000;
-      if(options.debug) {
-        console.log("EVSE: ",id, " TotalActivePower: ", EVSEPower[id]);
-      }
-    }
-    sendAggregates();
-  } else if ((index = options.dimmable.indexOf(topic)) >= 0) {
-    let id = topic.split('/')[1];
-    let obj = JSON.parse(message);
-    let val = findVal(obj, options.dimmablefield[index]);
-    if(val != undefined) {
-      dimmablePower[id] = val*1000;
-      if(options.debug) {
-        console.log("Dimmable: ",id, " TotalActivePower: ", dimmablePower[id]);
-      }
-    }
-    sendAggregates();
-  } else if (topic.includes("SMAEM/") || topic.includes("tele/tasmota")) {
-    let id = topic.split('/')[1];
-    let obj = JSON.parse(message);
-    val = findVal(obj, options.gridmeterfield);
-    if (val === undefined && findVal(obj,'0:1.4.0') != undefined) {
-      val = obj['0:1.4.0'] - obj['0:2.4.0'];
-    }
-    if(val != undefined) {
-      gridBalance = val;
-      gridBalanceAge = Date.now();
-      if(options.debug) {
-        console.log("gridBalance: ", id, "val: ", gridBalance);
-      }
-      sendAggregates();
-    } 
-  } else if ((index = options.na.indexOf(topic)) >= 0) {
+    } else if ((index = options.na.indexOf(topic)) >= 0) {
       let val = JSON.parse(message);
-      if(options.debug) {
-        console.log("NA: ",options.na, " state: ", val);
+      if (options.debug) {
+        console.log("NA: ", options.na, " state: ", val);
       }
       hoymiles.forEach(function (id, index) {
-        MQTTclient.publish("Hoymiles/" + id + "/cmd/power", val==0?"1":"0", { retain: true })
-    });
-  } else if (topic.includes("agg/" + options.mqttclientid)) {
+        MQTTclient.publish("Hoymiles/" + id + "/cmd/power", val == 0 ? "1" : "0", { retain: true })
+      });
+    } else if (topic.includes("agg/" + options.mqttclientid)) {
       state_retained = JSON.parse(message);
-      if(options.debug) {
+      if (options.debug) {
         console.log("agg received: ", state);
       }
+    }
+  } catch (error) {
+    console.log("Error  : ", error);
+    console.log("Message: ", message.toString());
   }
 });
