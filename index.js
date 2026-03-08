@@ -22,9 +22,8 @@ var hoymiles = [];
 const optionDefinitions = [
   { name: 'mqtthost', alias: 'm', type: String, defaultValue: "localhost" },
   { name: 'mqttclientid', alias: 'M', type: String, defaultValue: "mqtt2agg" },
-  { name: 'inverter', alias: 'i', type: String, multiple: true, defaultValue: ['Huawei/#', 'GoodWe/#', 'SMA/#', 'Hoymiles/#', 'Kostal/#', 'SUNSPEC/#'] },
-
-  { name: 'gridmeter', alias: 'g', type: String },
+  { name: 'inverter', alias: 'i', type: String, multiple: true, defaultValue: ['Huawei/+', 'GoodWe/+', 'SMA/+', 'Hoymiles/+', 'Kostal/+', 'SUNSPEC/+'] },
+  { name: 'gridmeter', alias: 'g', type: String, defaultValue: "SMAEM/+" },
   { name: 'gridmeterfield', alias: 'f', type: String, defaultValue: "Power" },
   { name: 'evse', alias: 'e', type: String, multiple: true, defaultValue: [] },
   { name: 'evsefield', type: String, multiple: true, defaultValue: ['TotalActivePower', 'TotalActivePower'] },
