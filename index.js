@@ -5,6 +5,7 @@ const commandLineArgs = require('command-line-args')
 var errorCounter = 0;
 var gridBalance = 0;
 var PVPower = {};
+var SOC = {};
 var batteryPower = {};
 var EVSEPower = {};
 var dimmablePower = {};
@@ -125,6 +126,7 @@ function sendAggregates() {
     state.totalDimmablePower = 0;
     state.totalActivePower = 0;
     state.totalBatteryPower = 0;
+    state.totalSOC = 0;
     state.load = 0;
     state.totalPVEnergy = 0;
     state.dayPVEnergy = 0;
@@ -150,6 +152,9 @@ function sendAggregates() {
     }
     for (const [key, value] of Object.entries(batteryPower)) {
       state.totalBatteryPower += value;
+    }
+    for (const [key, value] of Object.entries(SOC)) {
+      state.totalSOC += value;
     }
     state.load = state.totalPVPower + state.gridBalance + state.totalBatteryPower;
     roundValues(state, 3);
@@ -340,8 +345,19 @@ MQTTclient.on('message', function (topic, message, packet) {
         val += battery2Power;
       }
       batteryPower[id] = val;
+
+      val = findVal(obj, "SOC");
+      if (val === undefined) {
+        val = 0;
+      }
+      var SOC2= findVal(obj, "BMS2SOC");
+      if (SOC2 != undefined) {
+        val += SOC2;
+        val = val /2;
+      }
+      SOC[id] = val;
       if (options.debug) {
-        console.log("PV-Inverter: GoodWe/Kostal/SMA/Huawei", id, " PVEnergy: ", PVEnergy[id], " TodayPVEnergy: ", todayPVEnergy[id], " PVPower:", PVPower[id], " ActivePower:", activePower[id], " Battery Power: ", batteryPower[id]);
+        console.log("PV-Inverter: GoodWe/Kostal/SMA/Huawei", id, " PVEnergy: ", PVEnergy[id], " TodayPVEnergy: ", todayPVEnergy[id], " PVPower:", PVPower[id], " ActivePower:", activePower[id], " Battery Power: ", batteryPower[id], " SOC: ", SOC[id]);
       }
       sendAggregates();
     } else if (topic.includes("Hoymiles/")) {
