@@ -158,7 +158,7 @@ function sendAggregates() {
       state.totalSOC += value;
       count ++;
     }
-    tate.totalSOC = tate.totalSOC / count;
+    state.totalSOC = state.totalSOC / count;
     state.load = state.totalPVPower + state.gridBalance + state.totalBatteryPower;
     roundValues(state, 3);
     //    if(state.todayPVEnergy < state_retained.todayPVEnergy) {
