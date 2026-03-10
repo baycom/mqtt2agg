@@ -155,8 +155,10 @@ function sendAggregates() {
     }
     let count = 0;
     for (const [key, value] of Object.entries(SOC)) {
-      state.totalSOC += value;
-      count ++;
+      if (!isNaN(value)) {
+        state.totalSOC += value;
+        count++;
+      }
     }
     state.totalSOC = state.totalSOC / count;
     state.load = state.totalPVPower + state.gridBalance + state.totalBatteryPower;
@@ -350,13 +352,12 @@ MQTTclient.on('message', function (topic, message, packet) {
       batteryPower[id] = val;
 
       val = findVal(obj, "SOC");
-      if (val === undefined) {
-        val = 0;
-      }
-      var SOC2= findVal(obj, "BMS2SOC");
-      if (SOC2 != undefined) {
-        val += SOC2;
-        val = val /2;
+      if (val != undefined) {
+        var SOC2 = findVal(obj, "BMS2SOC");
+        if (SOC2 != undefined) {
+          val += SOC2;
+          val = val / 2;
+        }
       }
       SOC[id] = val;
       if (options.debug) {
