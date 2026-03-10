@@ -153,9 +153,12 @@ function sendAggregates() {
     for (const [key, value] of Object.entries(batteryPower)) {
       state.totalBatteryPower += value;
     }
+    let count = 0;
     for (const [key, value] of Object.entries(SOC)) {
       state.totalSOC += value;
+      count ++;
     }
+    tate.totalSOC = tate.totalSOC / count;
     state.load = state.totalPVPower + state.gridBalance + state.totalBatteryPower;
     roundValues(state, 3);
     //    if(state.todayPVEnergy < state_retained.todayPVEnergy) {
