@@ -199,6 +199,21 @@ function findVal(object, key) {
   return value;
 }
 
+function setGoEchargerGridBalance(id) {
+  console.log("blubb");
+  if (findVal(state, "gridBalance") && (Date.now() - gridBalanceAge) < 10000) {
+    var goEgrid = { "pGrid": state.gridBalance, "pPv": state.totalPVPower, "pAkku": state.totalBatteryPower };
+    goEgrid.pPv = 0;
+    goEgrid.pAkku = 0;
+    goEgrid.pGrid = state.gridBalance + state.totalBatteryPower;
+
+    if (options.debug) {
+      console.log("go-eCharger: ids ", id, goEgrid);
+    }
+    sendMqtt("go-eCharger/" + id + "/ids/set", goEgrid);
+  }
+}
+
 MQTTclient.on('message', function (topic, message, packet) {
   try {
     //  console.log(topic + message);
@@ -238,13 +253,8 @@ MQTTclient.on('message', function (topic, message, packet) {
               EVSEPower[id] = nrg.P;
             }
             sendMqtt("go-eCharger/" + id + "/agg", nrg);
-            if (findVal(state, "gridBalance") && (Date.now() - gridBalanceAge) < 10000) {
-              var goEgrid = { "pGrid": state.gridBalance, "pPv": state.totalPVPower, "pAkku": state.totalBatteryPower };
-              if (options.debug) {
-                console.log("go-eCharger: ids ", id, goEgrid);
-              }
-              sendMqtt("go-eCharger/" + id + "/ids/set", goEgrid);
-            }
+            setGoEchargerGridBalance(id);
+            setTimeout(setGoEchargerGridBalance(id), 3000);
           }
         } else if (func == 'eto') {
           nrg.eto = obj;
