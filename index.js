@@ -200,7 +200,6 @@ function findVal(object, key) {
 }
 
 function setGoEchargerGridBalance(id) {
-  console.log("blubb");
   if (findVal(state, "gridBalance") && (Date.now() - gridBalanceAge) < 10000) {
     var goEgrid = { "pGrid": state.gridBalance, "pPv": state.totalPVPower, "pAkku": state.totalBatteryPower };
     goEgrid.pPv = 0;
@@ -254,7 +253,7 @@ MQTTclient.on('message', function (topic, message, packet) {
             }
             sendMqtt("go-eCharger/" + id + "/agg", nrg);
             setGoEchargerGridBalance(id);
-            setTimeout(setGoEchargerGridBalance(id), 3000);
+            setTimeout(setGoEchargerGridBalance, 3000, id);
           }
         } else if (func == 'eto') {
           nrg.eto = obj;
